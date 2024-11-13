@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Settings</title>
+	<style>
+		/* Notification Box */
+		#notification {
+			display: none;
+			position: fixed;
+			top: 50%;
+			/* Position from the top */
+			left: 50%;
+			/* Position from the left */
+			transform: translate(-50%, -50%);
+			/* Adjust the position to center it */
+			padding: 10px 20px;
+			background-color: #bd2626;
+			/* Red background for error */
+			color: #fff;
+			border: 1px solid #ff0000;
+			border-radius: 5px;
+			font-size: 14px;
+			opacity: 1;
+			transition: opacity 1s ease-out;
+			z-index: 1000;
+		}
+
+
+
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f9f9f9;
+			margin: 0;
+			padding: 0;
+		}
+
+		.container {
+			width: 90%;
+			margin: 20px auto;
+			padding: 20px;
+			background-color: #fff;
+			border-radius: 8px;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		}
+
+		h2 {
+			text-align: center;
+		}
+
+		.form-group {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 15px;
+		}
+
+		label {
+			flex: 1;
+			font-weight: bold;
+		}
+
+		input {
+			flex: 2;
+			padding: 8px;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+		}
+
+		button {
+			display: block;
+			width: 100%;
+			padding: 10px;
+			background-color: #28a745;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+
+		button:disabled {
+			background-color: #ccc;
+			cursor: not-allowed;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="container">
+		<h2>Smart Power Monitoring and Control System (Settings)</h2>
+
+		<div class="form-group">
+			<label for="calibration">Sensor Calibration</label>
+			<input type="number" id="calibration" placeholder="Enter calibration value">
+		</div>
+		<div class="form-group">
+			<label for="maxp1">Max Power 1</label>
+			<input type="number" id="maxp1" placeholder="Enter max power 1">
+		</div>
+		<div class="form-group">
+			<label for="maxp2">Max Power 2</label>
+			<input type="number" id="maxp2" placeholder="Enter max power 2">
+		</div>
+		<div class="form-group">
+			<label for="maxp3">Max Power 3</label>
+			<input type="number" id="maxp3" placeholder="Enter max power 3">
+		</div>
+		<div class="form-group">
+			<label for="maxp4">Max Power 4</label>
+			<input type="number" id="maxp4" placeholder="Enter max power 4">
+		</div>
+		<button id="updateButton" onclick="updateSettings()">Update</button><br>
+		<button id="link" class="link" onclick="openDashboard()">View Dashboard</button>
+
+	</div>
+
+	<div id="notification"></div>
+
+
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+	<script>
+		function showNotification(message) {
+			const notification = document.getElementById("notification");
+			notification.innerText = message;
+			notification.style.display = "block";
+			notification.style.opacity = "1";
+
+			// Fade out after 3 seconds
+			setTimeout(() => {
+				notification.style.opacity = "0";
+				setTimeout(() => {
+					notification.style.display = "none";
+				}, 1000); // Hide completely after fade-out
+			}, 3000);
+		}
+
+
+
+		// Function to open the Dashboard page
+		function openDashboard() {
+			window.location.href = "dashboard.html"; // Replace "settings.html" with the actual path if different
+		}
+
+		// Firebase configuration
+		const firebaseConfig = {
+			apiKey: Optional.ofNullable(System.getenv("API_KEY")).orElse(""),
+			authDomain: Optional.ofNullable(System.getenv("AUTH_DOMAIN")).orElse(""),
+			databaseURL: Optional.ofNullable(System.getenv("DATABASE_URL")).orElse(""),
+			projectId: Optional.ofNullable(System.getenv("PROJECT_ID")).orElse(""),
+			storageBucket: Optional.ofNullable(System.getenv("STORAGE_BUCKET")).orElse(""),
+			messagingSenderId: Optional.ofNullable(System.getenv("MESSAGING_SENDER_ID")).orElse(""),
+			appId: Optional.ofNullable(System.getenv("APP_ID")).orElse("")
+		};
+
+		// Initialize Firebase
+		const app = firebase.initializeApp(firebaseConfig);
+		const database = firebase.database();
+
+		// Fetch settings data from Firebase
+		function fetchSettings() {
+			firebase.database().ref('uniport_elect/smart_monitor').once('value', (snapshot) => {
+				const data = snapshot.val();
+				document.getElementById('calibration').value = data.calibration || 0;
+				document.getElementById('maxp1').value = data.maxp1 || 0;
+				document.getElementById('maxp2').value = data.maxp2 || 0;
+				document.getElementById('maxp3').value = data.maxp3 || 0;
+				document.getElementById('maxp4').value = data.maxp4 || 0;
+			});
+		}
+
+
+		// Update settings in Firebase
+		function updateSettings() {
+			const calibration = parseFloat(document.getElementById('calibration').value);
+			const maxp1 = parseFloat(document.getElementById('maxp1').value);
+			const maxp2 = parseFloat(document.getElementById('maxp2').value);
+			const maxp3 = parseFloat(document.getElementById('maxp3').value);
+			const maxp4 = parseFloat(document.getElementById('maxp4').value);
+			const settings = 1;
+			firebase.database().ref('uniport_elect/smart_monitor').update({
+				calibration,
+				maxp1,
+				maxp2,
+				maxp3,
+				maxp4,
+				settings
+			}).then(() => {
+				showNotification("Settings updated successfully!");
+			}).catch((error) => {
+				console.error("Error updating settings:", error);
+			});
+		}
+
+		// Initial fetch of settings data
+		fetchSettings();
+	</script>
+
+</body>
+
+</html>

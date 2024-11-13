@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Power Monitoring - Login</title>
+  <style>
+    /* Notification Box */
+    #notification {
+  display: none;
+  position: fixed;
+  top: 50%; /* Position from the top */
+  left: 50%; /* Position from the left */
+  transform: translate(-50%, -50%); /* Adjust the position to center it */
+  padding: 10px 20px;
+  background-color: #bd2626; /* Red background for error */
+  color: #fff;
+  border: 1px solid #ff0000;
+  border-radius: 5px;
+  font-size: 14px;
+  opacity: 1;
+  transition: opacity 1s ease-out;
+  z-index: 1000;
+}
+
+
+    body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f0f0f0; }
+    .login-container { text-align: center; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    h2 { margin-bottom: 10px; }
+    input[type="password"], button { padding: 10px; font-size: 1em; margin: 10px 0; width: 100%; }
+    button { background-color: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div class="login-container">
+  <h2>Smart Power Monitoring and Control System</h2>
+  <img src="icon.png" alt="Project Icon" width="100" style="margin-bottom: 20px;">
+  <input type="password" id="password" placeholder="Enter Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="notification"></div>
+
+
+<script>
+  function login() {
+    const passwordInput = document.getElementById('password').value;
+    const correctPassword = "1122334455";
+    if (passwordInput === correctPassword) {
+      window.location.href = "dashboard.html";
+    } else {
+        showNotification("Incorrect password !!!");
+    }
+  }
+
+
+  function showNotification(message) {
+  const notification = document.getElementById("notification");
+  notification.innerText = message;
+  notification.style.display = "block";
+  notification.style.opacity = "1";
+
+  // Fade out after 3 seconds
+  setTimeout(() => {
+    notification.style.opacity = "0";
+    setTimeout(() => {
+      notification.style.display = "none";
+    }, 1000); // Hide completely after fade-out
+  }, 3000);
+}
+
+
+</script>
+
+</body>
+</html>

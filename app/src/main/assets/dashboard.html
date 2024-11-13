@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Smart Power Monitoring Dashboard</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #f9f9f9;
+		}
+
+		.container {
+			width: 90%;
+			margin: 0 auto;
+			padding: 20px;
+		}
+
+		h2 {
+			text-align: center;
+		}
+
+		.socket {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 15px;
+			background: #fff;
+			margin: 10px 0;
+			border-radius: 8px;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		}
+
+		.details {
+			flex-grow: 1;
+		}
+
+		.status {
+			font-weight: bold;
+		}
+
+		button {
+			padding: 8px 12px;
+			background-color: #28a745;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+		button.off {
+			background-color: #dc3545;
+		}
+
+		/* button.link { display: block; width: 100%; padding: 10px; background-color: #28a745; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;}    */
+		.link {
+			display: block;
+			margin: 10px auto;
+			padding: 10px 20px;
+			background-color: #007bff;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			text-align: center;
+			cursor: pointer;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="container">
+		<h2>Smart Power Monitoring and Control System</h2>
+		<button id="link" class="link" onclick="openSettings()">Change Settings</button>
+		<div id="sockets"></div>
+	</div>
+
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+	<script>
+		// Firebase configuration
+		const firebaseConfig = {
+			apiKey: Optional.ofNullable(System.getenv("API_KEY")).orElse(""),
+			authDomain: Optional.ofNullable(System.getenv("AUTH_DOMAIN")).orElse(""),
+			databaseURL: Optional.ofNullable(System.getenv("DATABASE_URL")).orElse(""),
+			projectId: Optional.ofNullable(System.getenv("PROJECT_ID")).orElse(""),
+			storageBucket: Optional.ofNullable(System.getenv("STORAGE_BUCKET")).orElse(""),
+			messagingSenderId: Optional.ofNullable(System.getenv("MESSAGING_SENDER_ID")).orElse(""),
+			appId: Optional.ofNullable(System.getenv("APP_ID")).orElse("")
+		};
+
+		// Initialize Firebase
+		const app = firebase.initializeApp(firebaseConfig);
+		const database = firebase.database();
+
+		const socketsContainer = document.getElementById('sockets');
+
+		// Fetch voltage, currents, statuses, and runtime from Firebase
+		function fetchSocketData() {
+			firebase.database().ref('uniport_elect/smart_monitor').on('value', (snapshot) => {
+				const data = snapshot.val();
+				const voltage = data.voltage;
+
+				// Clear previous data
+				socketsContainer.innerHTML = "";
+				// Create socket elements dynamically
+				for (let i = 1; i <= 4; i++) {
+					const current = data[`current${i}`];
+					const status = data[`status${i}`];
+					// const power = voltage * current;
+					const power = parseFloat((voltage * current).toFixed(2));
+					const rawruntime = data.runtime;
+					const runtime = convertToTimeFormat(rawruntime);
+					createSocketElement(i, current, voltage, power, runtime, status);
+				}
+			});
+		}
+
+		// Create HTML for each socket
+		function createSocketElement(socketNumber, current, voltage, power, runtime, status) {
+			const socketDiv = document.createElement('div');
+			socketDiv.className = 'socket';
+			socketDiv.innerHTML = `
+      <div class="details">
+        <p>Socket ID: ${socketNumber}</p>
+        <p>Current: ${current} A</p>
+        <p>Voltage: ${voltage} V</p>
+        <p>Power: ${power} W</p>
+        <p>Runtime: ${runtime}</p>
+        <p class="status">Status: <span id="status${socketNumber}">${status ? 'On' : 'Off'}</span></p>
+      </div>
+      <button id="toggleButton${socketNumber}" class="${status ? 'off' : ''}" onclick="toggleSocket(${socketNumber}, ${status ? 0 : 1})">
+        ${status ? 'Turn Off' : 'Turn On'}
+      </button>
+    `;
+			socketsContainer.appendChild(socketDiv);
+		}
+
+
+
+		// Function to convert seconds into HH:MM:SS format
+		function convertToTimeFormat(seconds) {
+			const hours = Math.floor(seconds / 3600); // Get hours
+			const minutes = Math.floor((seconds % 3600) / 60); // Get minutes
+			const remainingSeconds = seconds % 60; // Get remaining seconds
+
+			// Format hours, minutes, and seconds as two digits
+			const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+
+			return formattedTime;
+		}
+
+
+		// Function to open the settings page
+		function openSettings() {
+			window.location.href = "settings.html"; // Replace "settings.html" with the actual path if different
+		}
+
+
+		// Toggle socket on/off in Firebase
+		function toggleSocket(socketNumber, newStatus) {
+			// Update Firebase with the new status
+			firebase.database().ref(`uniport_elect/smart_monitor/status${socketNumber}`).set(newStatus)
+				.then(() => {
+					console.log(`Status for socket ${socketNumber} updated to ${newStatus}`);
+
+					// Update the UI immediately after toggling
+					const statusText = document.getElementById(`status${socketNumber}`);
+					const toggleButton = document.getElementById(`toggleButton${socketNumber}`);
+
+					statusText.textContent = newStatus ? 'On' : 'Off';
+					toggleButton.textContent = newStatus ? 'Turn Off' : 'Turn On';
+					toggleButton.classList.toggle('off', newStatus === 1);
+				})
+				.catch((error) => {
+					console.error("Error updating status:", error);
+				});
+		}
+
+		// Initial fetch of socket data
+		fetchSocketData();
+	</script>
+
+</body>
+
+</html>
